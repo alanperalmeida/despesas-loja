@@ -39,9 +39,7 @@ COPY api_server.py .
 RUN mkdir -p /app/relatorios
 
 # Expor porta padrao do n8n/Easypanel E a porta da aplicacao
-EXPOSE 3000
-EXPOSE 5679
-
+EXPOSE 80
 # Health check para garantir que a API esta respondendo
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:5679/health || exit 1
