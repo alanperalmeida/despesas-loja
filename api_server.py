@@ -13,7 +13,8 @@ from pathlib import Path
 from datetime import datetime
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
-PORT = 5679
+# Usar porta 3000 (padrao n8n/Easypanel) ou PORTA da variavel de ambiente
+PORT = int(os.getenv('PORT', '3000'))
 
 # Armazena status da ultima execucao
 execution_status = {
@@ -27,6 +28,7 @@ class APIHandler(BaseHTTPRequestHandler):
     def _send_json(self, data, status=200):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(json.dumps(data, ensure_ascii=False, default=str).encode('utf-8'))
     
@@ -83,7 +85,26 @@ class APIHandler(BaseHTTPRequestHandler):
             self._send_json({'rows': rows, 'total': len(rows)})
         
         elif self.path == '/health':
-            self._send_json({'status': 'ok', 'timestamp': datetime.now().isoformat()})
+            self._send_json({
+                'status': 'ok', 
+                'timestamp': datetime.now().isoformat(),
+                'port': PORT,
+                'version': '2.0'
+            })
+        
+        elif self.path == '/' or self.path == '':
+            # Root endpoint - mostra documentacao
+            self._send_json({
+                'service': 'Degustone Scraper API',
+                'version': '2.0',
+                'endpoints': {
+                    'GET /health': 'Health check',
+                    'GET /status': 'Status da ultima execucao',
+                    'GET /data': 'Dados consolidados (CSV como JSON)',
+                    'POST /scraper': 'Executar scraper + consolidacao'
+                },
+                'port': PORT
+            })
         
         else:
             self._send_json({'error': 'Rota nao encontrada'}, 404)
@@ -158,16 +179,19 @@ class APIHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    print(f"=== API Degustone rodando em http://localhost:{PORT} ===")
+    print(f"=== API Degustone v2.0 ===")
+    print(f"Rodando em http://0.0.0.0:{PORT}")
     print(f"Diretorio: {WORK_DIR}")
     print(f"")
     print(f"Rotas disponiveis:")
-    print(f"  POST /scraper  - Executa scraper + consolidacao")
-    print(f"  GET  /data     - Retorna dados do CSV como JSON")
-    print(f"  GET  /status   - Status da ultima execucao")
-    print(f"  GET  /health   - Health check")
+    print(f"  GET  /          - Documentacao da API")
+    print(f"  GET  /health    - Health check")
+    print(f"  POST /scraper   - Executa scraper + consolidacao")
+    print(f"  GET  /data      - Retorna dados do CSV como JSON")
+    print(f"  GET  /status    - Status da ultima execucao")
     print(f"")
     print(f"Aguardando requisicoes...")
+    print(f"")
     
     server = HTTPServer(('0.0.0.0', PORT), APIHandler)
     try:
