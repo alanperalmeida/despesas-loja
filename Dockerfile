@@ -33,7 +33,7 @@ COPY config.py .
 COPY degustone_scraper.py .
 COPY consolidate_data.py .
 COPY api_server.py .
-COPY .env .
+# COPY .env . (Variaveis de ambiente sao configuradas no painel)
 
 # Criar diretorio de saida
 RUN mkdir -p /app/relatorios
