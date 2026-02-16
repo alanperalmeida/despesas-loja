@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+relatorios/
+diagnostico_screenshots/
+debug_*.png
+*.csv
+.git
+.gitignore
+.env.example
+README.md
+n8n_workflow_despesas.json
+docker-compose.yml

@@ -1,0 +1,81 @@
+version: "3.8"
+
+services:
+  # ============================================
+  # PostgreSQL - Banco de dados
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: despesas-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-despesas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-despesas123}
+      POSTGRES_DB: ${POSTGRES_DB:-despesas_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./create_table_despesas.sql:/docker-entrypoint-initdb.d/01_create_table.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-despesas}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Scraper API - Python + Playwright
+  # ============================================
+  scraper-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: despesas-scraper
+    restart: always
+    environment:
+      - DEGUSTONE_CPF=${DEGUSTONE_CPF}
+      - DEGUSTONE_SENHA=${DEGUSTONE_SENHA}
+      - HEADLESS=true
+    volumes:
+      - scraper_data:/app/relatorios
+    ports:
+      - "5679:5679"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ============================================
+  # n8n - Automacao de workflows
+  # ============================================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: despesas-n8n
+    restart: always
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-admin123}
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://${N8N_HOST:-localhost}:5678/
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB:-despesas_db}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER:-despesas}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD:-despesas123}
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - TZ=America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+    ports:
+      - "5678:5678"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  scraper_data:
+  n8n_data:

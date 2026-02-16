@@ -1,0 +1,167 @@
+{
+    "name": "Degustone - Extração Diária de Despesas",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "triggerAtHour": 6,
+                            "triggerAtMinute": 0
+                        }
+                    ]
+                }
+            },
+            "id": "a1b2c3d4-0001-4000-8000-000000000001",
+            "name": "Trigger Diário 6h",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                220,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://scraper-api:5679/scraper",
+                "options": {
+                    "timeout": 600000
+                }
+            },
+            "id": "a1b2c3d4-0001-4000-8000-000000000002",
+            "name": "1. Executar Scraper",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                460,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://scraper-api:5679/data",
+                "options": {}
+            },
+            "id": "a1b2c3d4-0001-4000-8000-000000000003",
+            "name": "2. Buscar Dados",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                700,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const data = $input.first().json;\n\nif (!data.rows || data.rows.length === 0) {\n  throw new Error('Nenhum dado retornado pela API');\n}\n\nreturn data.rows.map(row => ({ json: row }));"
+            },
+            "id": "a1b2c3d4-0001-4000-8000-000000000004",
+            "name": "3. Separar Registros",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                940,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "INSERT INTO despesas_loja (\n  franquia_id, franquia_nome, data_extracao,\n  loja, conferido, conta, historico,\n  data_competencia, data_vencimento, liquidado,\n  valor, sangria, n_cheque_pre,\n  valor_numerico, sangria_numerica,\n  tabela_origem, arquivo_origem, data_carga\n) VALUES (\n  '{{ $json.franquia_id }}',\n  '{{ $json.franquia_nome }}',\n  '{{ $json.data_extracao }}',\n  '{{ $json.loja }}',\n  '{{ $json.conferido }}',\n  '{{ $json.conta }}',\n  '{{ $json.historico }}',\n  '{{ $json.data_competencia }}',\n  '{{ $json.data_vencimento }}',\n  '{{ $json.liquidado }}',\n  '{{ $json.valor }}',\n  '{{ $json.sangria }}',\n  '{{ $json.n_cheque_pre }}',\n  {{ $json.valor_numerico }},\n  {{ $json.sangria_numerica }},\n  '{{ $json.tabela_origem }}',\n  '{{ $json.arquivo_origem }}',\n  '{{ $json.data_carga }}'\n)\nON CONFLICT (franquia_id, data_competencia, historico, valor)\nDO UPDATE SET\n  data_carga = EXCLUDED.data_carga,\n  liquidado = EXCLUDED.liquidado,\n  sangria = EXCLUDED.sangria,\n  conferido = EXCLUDED.conferido;",
+                "options": {}
+            },
+            "id": "a1b2c3d4-0001-4000-8000-000000000005",
+            "name": "4. Inserir no PostgreSQL",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                1180,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "CONFIGURAR",
+                    "name": "PostgreSQL Despesas"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $input.all();\nreturn [{\n  json: {\n    status: 'SUCESSO',\n    data: new Date().toISOString(),\n    total_registros: items.length,\n    mensagem: 'Carga concluida: ' + items.length + ' registros'\n  }\n}];"
+            },
+            "id": "a1b2c3d4-0001-4000-8000-000000000006",
+            "name": "5. Resumo",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1420,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Trigger Diário 6h": {
+            "main": [
+                [
+                    {
+                        "node": "1. Executar Scraper",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "1. Executar Scraper": {
+            "main": [
+                [
+                    {
+                        "node": "2. Buscar Dados",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "2. Buscar Dados": {
+            "main": [
+                [
+                    {
+                        "node": "3. Separar Registros",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "3. Separar Registros": {
+            "main": [
+                [
+                    {
+                        "node": "4. Inserir no PostgreSQL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "4. Inserir no PostgreSQL": {
+            "main": [
+                [
+                    {
+                        "node": "5. Resumo",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "saveManualExecutions": true,
+        "callerPolicy": "workflowsFromSameOwner"
+    },
+    "staticData": null,
+    "triggerCount": 1
+}

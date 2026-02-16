@@ -1,0 +1,30 @@
+# Ambientes virtuais e dependencias
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Variaveis de ambiente e credenciais
+.env
+
+# Dados e relatorios (Sensiveis/Volumosos)
+relatorios/
+relatorios_old/
+*.csv
+*.json
+!n8n_workflow_despesas.json
+
+# Logs e Debug
+*.log
+*.png
+*.html
+*.txt
+!requirements.txt
+
+# Arquivos de sistema/IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Scripts de diagnostico temporarios (opcional, manter se quiser historico)
+# diagnostico_*.py
