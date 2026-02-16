@@ -1,25 +1,23 @@
-# 🚀 Instalação via Easypanel + GitHub
+# 🚀 Instalação via Easypanel + GitHub (Projeto Separado)
 
-Como o código já está no GitHub, o processo é **MUITO SIMPLES**. O Easypanel vai baixar o código, criar a imagem Docker e rodar tudo automaticamente.
+Para manter a organização e evitar conflitos com seu n8n atual, vamos criar um projeto novo.
 
 ---
 
-## Passo 1: Preparação
+## Passo 1: Criar Novo Projeto
 
-1. **Acesse seus projetos** no Easypanel.
-2. Como você já tem o projeto **"n8n"** rodando, vamos adicionar os serviços nele para facilitar a comunicação.
-3. Abra o projeto **"n8n"** (ou "meus-apps" se preferir, mas certifique-se que o n8n consegue acessar).
+1. No Easypanel, clique em **"+ Novo"**.
+2. Nome: `despesas-degustone`.
+3. Clique em **Criar**.
 
 ---
 
 ## Passo 2: Criar Banco de Dados (PostgreSQL)
 
-*Se você já tem um Postgres configurado e quer usar o mesmo, pule esta etapa e use as credenciais existentes.*
-
-1. Dentro do projeto, clique em **"+ Service"** -> **App Store**.
+1. Dentro do projeto `despesas-degustone`, clique em **"+ Service"** -> **App Store**.
 2. Procure por **PostgreSQL**.
 3. Configure:
-   - **Name**: `postgres` (Importante ser esse nome)
+   - **Name**: `postgres`
    - **Database**: `despesas_db`
    - **User**: `despesas`
    - **Password**: `SuaSenhaForteAqui`
@@ -27,52 +25,52 @@ Como o código já está no GitHub, o processo é **MUITO SIMPLES**. O Easypanel
 
 ---
 
-## Passo 3: Criar API do Scraper (A Mágica!)
+## Passo 3: Criar API do Scraper
 
 1. Clique em **"+ Service"** -> **App**.
-2. Dê o nome de `scraper-api`.
-3. Vá na aba **General**:
+2. Nome: `scraper-api`.
+3. **General**:
    - **Source**: `Git` (ou GitHub)
    - **Repository**: `https://github.com/alanperalmeida/despesas-loja`
    - **Branch**: `main`
-   - **Build Method**: `Dockerfile` (padrão)
-   
-4. Vá na aba **Environment**:
-   - Adicione as variáveis do seu arquivo `.env` MANUALMENTE aqui:
-     - `DEGUSTONE_CPF` = `seu_cpf`
-     - `DEGUSTONE_SENHA` = `sua_senha`
-     - `POSTGRES_HOST` = `postgres` (se estiver no mesmo projeto)
+   - **Build Method**: `Dockerfile`
+
+4. **Environment**:
+   - Adicione suas variáveis do `.env` aqui:
+     - `DEGUSTONE_CPF` = `...`
+     - `DEGUSTONE_SENHA` = `...`
+     - `POSTGRES_HOST` = `postgres` (conexão interna no mesmo projeto)
      - `POSTGRES_DB` = `despesas_db`
      - `POSTGRES_USER` = `despesas`
      - `POSTGRES_PASSWORD` = `SuaSenhaForteAqui`
      - `HEADLESS` = `true`
 
-5. Vá na aba **Networking**:
-   - **HTTP Port**: `5679` (Isso é muito importante!)
-   - **Public**: Opcional (se quiser acessar de fora). Se for só pro n8n, não precisa.
+5. **Networking (Importante para comunicar com n8n)**:
+   - **HTTP Port**: `5679`
+   - **Domains**: Clique em "+ Domain". 
+     - O Easypanel vai gerar um domínio automático (ex: `scraper-api.seu-easypanel.com`).
+     - **Anote esse domínio!** Seu n8n vai usar ele para acessar a API.
 
 6. Clique em **Deploy**.
 
-O Easypanel vai baixar o código do GitHub, instalar tudo (pode demorar uns 3-5 min na primeira vez) e subir o serviço.
-
 ---
 
-## Passo 4: Conectar com n8n
+## Passo 4: Conectar n8n (que está em outro projeto)
 
-No seu n8n (que já está rodando), configure os nodes HTTP:
+No seu n8n, nos nodes HTTP:
 
 1. **URL do Scraper**: 
-   - Use `http://scraper-api:5679` (se estiverem no mesmo projeto)
-   - Ou use o IP interno/nome do serviço.
+   - Use o domínio público que você criou no passo anterior:
+   - Ex: `https://scraper-api.seu-easypanel.com/scraper`
+   
+   ⚠️ **Não use** `http://scraper-api:5679` (isso só funciona se estivessem no mesmo projeto).
+   ✅ **Use** `https://seudominio.com/scraper`
 
-2. **Testar**:
-   - Mande rodar o workflow. Se o scraper-api estiver verde (Running), vai funcionar!
+2. **Segurança (Recomendado)**:
+   - Como a API ficará pública, considere adicionar uma senha simples no código ou usar o "Basic Auth" do Easypanel na aba "Security" do serviço.
 
 ---
 
-## 🔄 Como atualizar depois?
+## 🔄 Como atualizar?
 
-Se você mexer no código no seu PC:
-1. `git push origin main`
-2. No Easypanel, vá no serviço `scraper-api` e clique em **Deploy**.
-Ele baixa a nova versão e atualiza sozinho! 🚀
+Igual antes: `git push` no seu PC -> botão **Deploy** no Easypanel.
