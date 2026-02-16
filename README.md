@@ -237,6 +237,43 @@ Em caso de problemas:
 3. Consulte a documentação técnica
 4. Verifique se credenciais estão corretas
 
+
+## 💻 Guia de Desenvolvimento (Git)
+
+### Em outro computador (Novo Setup)
+1. **Clonar o repositório:**
+   ```bash
+   git clone https://github.com/alanperalmeida/despesas-loja.git
+   cd despesas-loja
+   ```
+2. **Configurar Ambiente:**
+   ```bash
+   # Criar ambiente virtual
+   python -m venv venv
+   .\venv\Scripts\activate
+   
+   # Instalar dependências
+   pip install -r requirements.txt
+   playwright install chromium
+   ```
+3. **Criar .env:**
+   - Copie `.env.example` para `.env`
+   - Preencha suas credenciais
+
+### Fluxo de Trabalho (Dia a Dia)
+1. **Atualizar código (antes de começar):**
+   ```bash
+   git pull origin main
+   ```
+2. **Fazer alterações** no código via VS Code ou editor.
+3. **Enviar alterações:**
+   ```bash
+   git add .
+   git commit -m "Descrição do que foi feito"
+   git push origin main
+   ```
+
 ## 📄 Licença
+
 
 Este projeto é fornecido como está, para uso pessoal.
