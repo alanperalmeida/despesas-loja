@@ -1,76 +1,65 @@
-# 🚀 Instalação via Easypanel + GitHub (Projeto Separado)
+# 🚀 Instalação Recomendada (Mesmo Projeto do n8n)
 
-Para manter a organização e evitar conflitos com seu n8n atual, vamos criar um projeto novo.
+Para **reutilizar seu Banco de Dados** existente e simplificar a conexão, a melhor opção é instalar tudo no **mesmo projeto**.
 
----
-
-## Passo 1: Criar Novo Projeto
-
-1. No Easypanel, clique em **"+ Novo"**.
-2. Nome: `despesas-degustone`.
-3. Clique em **Criar**.
+**⚠️ Vai dar conflito?**
+**NÃO.** O Easypanel usa Docker. Cada serviço é isolado em seu próprio container. O `scraper-api` não consegue tocar nos arquivos do `n8n` e vice-versa. É seguro.
 
 ---
 
-## Passo 2: Criar Banco de Dados (PostgreSQL)
+## Passo 1: Pegar Credencias do Banco Existente
 
-1. Dentro do projeto `despesas-degustone`, clique em **"+ Service"** -> **App Store**.
-2. Procure por **PostgreSQL**.
-3. Configure:
-   - **Name**: `postgres`
-   - **Database**: `despesas_db`
-   - **User**: `despesas`
-   - **Password**: `SuaSenhaForteAqui`
-4. Clique em **Create**.
+1. Abra seu projeto **"n8n"** (ou onde está seu banco).
+2. Clique no serviço do Banco de Dados (ex: `postgres` ou `n8nchat-db`).
+3. Vá na aba **Environment** ou desça até ver as credenciais.
+4. Anote:
+   - **Host** (Nome do serviço): geralmente `postgres`
+   - **Database**: nome do banco (confirme se é `despesas_db` ou se quer usar o existente)
+   - **User**: usuário do banco
+   - **Password**: senha do banco
 
 ---
 
-## Passo 3: Criar API do Scraper
+## Passo 2: Adicionar API do Scraper
 
-1. Clique em **"+ Service"** -> **App**.
+1. No mesmo projeto, clique em **"+ Service"** -> **App**.
 2. Nome: `scraper-api`.
 3. **General**:
-   - **Source**: `Git` (ou GitHub)
+   - **Source**: `Git`
    - **Repository**: `https://github.com/alanperalmeida/despesas-loja`
    - **Branch**: `main`
    - **Build Method**: `Dockerfile`
 
-4. **Environment**:
-   - Adicione suas variáveis do `.env` aqui:
+4. **Environment** (Aqui está o segredo):
+   - Use as credenciais que você anotou do SEU banco:
+     - `POSTGRES_HOST` = `postgres` (ou o nome do serviço do seu banco)
+     - `POSTGRES_DB` = `nome_do_seu_banco`
+     - `POSTGRES_USER` = `seu_usuario`
+     - `POSTGRES_PASSWORD` = `sua_senha`
      - `DEGUSTONE_CPF` = `...`
      - `DEGUSTONE_SENHA` = `...`
-     - `POSTGRES_HOST` = `postgres` (conexão interna no mesmo projeto)
-     - `POSTGRES_DB` = `despesas_db`
-     - `POSTGRES_USER` = `despesas`
-     - `POSTGRES_PASSWORD` = `SuaSenhaForteAqui`
      - `HEADLESS` = `true`
 
-5. **Networking (Importante para comunicar com n8n)**:
+5. **Networking**:
    - **HTTP Port**: `5679`
-   - **Domains**: Clique em "+ Domain". 
-     - O Easypanel vai gerar um domínio automático (ex: `scraper-api.seu-easypanel.com`).
-     - **Anote esse domínio!** Seu n8n vai usar ele para acessar a API.
+   - Não precisa de domínio público se for usar só no n8n.
 
 6. Clique em **Deploy**.
 
 ---
 
-## Passo 4: Conectar n8n (que está em outro projeto)
+## Passo 3: Verificar Tabela
 
-No seu n8n, nos nodes HTTP:
-
-1. **URL do Scraper**: 
-   - Use o domínio público que você criou no passo anterior:
-   - Ex: `https://scraper-api.seu-easypanel.com/scraper`
-   
-   ⚠️ **Não use** `http://scraper-api:5679` (isso só funciona se estivessem no mesmo projeto).
-   ✅ **Use** `https://seudominio.com/scraper`
-
-2. **Segurança (Recomendado)**:
-   - Como a API ficará pública, considere adicionar uma senha simples no código ou usar o "Basic Auth" do Easypanel na aba "Security" do serviço.
+O scraper vai tentar salvar na tabela `despesas_loja`.
+- Se você já criou essa tabela no seu banco: **Ótimo!** Ele vai usar.
+- Se não, rode o script SQL `create_table_despesas.sql` no seu banco via terminal do Easypanel.
 
 ---
 
-## 🔄 Como atualizar?
+## Passo 4: No n8n
 
-Igual antes: `git push` no seu PC -> botão **Deploy** no Easypanel.
+Como estão no mesmo projeto, a comunicação é interna:
+- URL Scraper: `http://scraper-api:5679`
+- Credenciais Postgres do n8n: Use as mesmas do Passo 1 (`postgres`, usuário, senha...).
+
+Pronto! Tudo integrado, sem duplicar banco e sem conflitos. 🚀
